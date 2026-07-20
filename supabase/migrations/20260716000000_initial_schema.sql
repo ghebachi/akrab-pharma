@@ -84,7 +84,7 @@ CREATE POLICY "Admins can view their own row"
 CREATE OR REPLACE FUNCTION public.get_nearest_duty_pharmacies(
   user_lat DOUBLE PRECISION,
   user_lng DOUBLE PRECISION,
-  target_date DATE
+  target_date TEXT
 )
 RETURNS TABLE (
   id              UUID,
@@ -125,7 +125,7 @@ BEGIN
   FROM public.pharmacies p
   INNER JOIN public.duty_schedules ds
     ON ds.pharmacy_id = p.id
-  WHERE ds.duty_date = target_date
+  WHERE ds.duty_date = target_date::DATE
   ORDER BY extensions.ST_Distance(p.location, user_point) ASC;
 END;
 $$;

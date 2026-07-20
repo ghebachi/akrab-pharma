@@ -1,266 +1,336 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 
 import '../config/app_colors.dart';
-import '../services/gps_service.dart';
-
-// ---------------------------------------------------------------------------
-// Data model for a single pharmacy row returned by the RPC.
-// ---------------------------------------------------------------------------
-class DutyPharmacy {
-  final String id;
-  final String name;
-  final String address;
-  final String municipality;
-  final String? phoneNumber;
-  final String? whatsappNumber;
-  final double latitude;
-  final double longitude;
-  final bool isNightDuty;
-  final double distanceMeters;
-
-  DutyPharmacy({
-    required this.id,
-    required this.name,
-    required this.address,
-    required this.municipality,
-    this.phoneNumber,
-    this.whatsappNumber,
-    required this.latitude,
-    required this.longitude,
-    required this.isNightDuty,
-    required this.distanceMeters,
-  });
-
-  factory DutyPharmacy.fromJson(Map<String, dynamic> json) {
-    return DutyPharmacy(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      address: json['address'] as String,
-      municipality: json['municipality'] as String,
-      phoneNumber: json['phone_number'] as String?,
-      whatsappNumber: json['whatsapp_number'] as String?,
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
-      isNightDuty: json['is_night_duty'] as bool? ?? false,
-      distanceMeters: (json['distance_meters'] as num).toDouble(),
-    );
-  }
-
-  double get distanceKm => distanceMeters / 1000.0;
-}
+import '../models/duty_pharmacy.dart';
+import '../models/wilayas.dart';
+import '../providers/pharmacy_provider.dart';
+import '../services/announcement_service.dart';
+import '../services/launch_utils.dart';
+import '../widgets/shimmer_loading.dart';
+import 'all_pharmacies_screen.dart';
+import 'pharmacy_details_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Home screen
 // ---------------------------------------------------------------------------
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) {
+    return const _HomeView();
+  }
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final SupabaseClient _supabase = Supabase.instance.client;
+class _HomeView extends StatelessWidget {
+  const _HomeView();
 
-  List<DutyPharmacy> _pharmacies = [];
-  bool _isLoading = true;
-  String? _errorMessage;
-  DateTime _selectedDate = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPharmacies();
-  }
-
-  // -----------------------------------------------------------------------
-  // Data fetching
-  // -----------------------------------------------------------------------
-  Future<void> _loadPharmacies() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final position = await GpsService.getCurrentPosition();
-
-      final data = await _supabase.rpc('get_nearest_duty_pharmacies', params: {
-        'user_lat': position.latitude,
-        'user_lng': position.longitude,
-        'target_date': _selectedDate.toIso8601String().substring(0, 10),
-      });
-
-      if (!mounted) return;
-
-      setState(() {
-        _pharmacies = (data as List<dynamic>)
-            .map((e) => DutyPharmacy.fromJson(e as Map<String, dynamic>))
-            .toList();
-        _isLoading = false;
-      });
-    } on GpsException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = e.message;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = 'Failed to load pharmacies. Please try again.';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(const Duration(days: 1)),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
-    );
-    if (picked != null && picked != _selectedDate) {
-      setState(() => _selectedDate = picked);
-      _loadPharmacies();
-    }
-  }
-
-  // -----------------------------------------------------------------------
-  // External launchers
-  // -----------------------------------------------------------------------
-  Future<void> _openWhatsApp(String phoneNumber) async {
-    final digits = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
-    final uri = Uri.parse('https://wa.me/$digits?text=');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _openMaps(double lat, double lng, String name) async {
-    final uri = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1'
-      '&destination=$lat,$lng'
-      '&travelmode=driving',
-    );
-    // Fallback: query-less search by name
-    final fallback = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-    );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else if (await canLaunchUrl(fallback)) {
-      await launchUrl(fallback, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  // -----------------------------------------------------------------------
-  // UI
-  // -----------------------------------------------------------------------
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<PharmacyProvider>();
+
     return Scaffold(
       appBar: AppBar(
+        leading: Builder(
+          builder: (ctx) => IconButton(
+            icon: const Icon(Icons.menu),
+            tooltip: 'Menu',
+            onPressed: () => Scaffold.of(ctx).openDrawer(),
+          ),
+        ),
         title: const Text('Akrab Pharma'),
         actions: [
+          // Wilaya dropdown
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: provider.selectedWilaya,
+                isDense: true,
+                items: Wilayas.all
+                    .map((w) => DropdownMenuItem(value: w, child: Text(w, style: const TextStyle(fontSize: 13))))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) provider.setWilaya(v);
+                },
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
             tooltip: 'Pick date',
-            onPressed: _pickDate,
+            onPressed: () => _pickDate(context),
           ),
         ],
       ),
-      body: _buildBody(),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _loadPharmacies,
-        icon: const Icon(Icons.my_location),
-        label: const Text('Refresh'),
+      body: _buildBody(context, provider),
+      floatingActionButton: provider.status == PharmacyStatus.loading
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: () => provider.load(),
+              icon: const Icon(Icons.my_location),
+              label: const Text('Refresh'),
+            ),
+    );
+  }
+
+  // ── Date picker ──────────────────────────────────────────────────────
+  Future<void> _pickDate(BuildContext context) async {
+    final provider = context.read<PharmacyProvider>();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: provider.selectedDate,
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+    );
+    if (picked != null && picked != provider.selectedDate) {
+      provider.setDate(picked);
+    }
+  }
+
+  // ── Body builder ─────────────────────────────────────────────────────
+  Widget _buildBody(BuildContext context, PharmacyProvider provider) {
+    return Column(
+      children: [
+        // Announcement banner (if exists)
+        if (provider.announcement != null) _announcementBanner(provider.announcement!),
+        // Main content
+        Expanded(child: _buildStateContent(context, provider)),
+      ],
+    );
+  }
+
+  Widget _buildStateContent(BuildContext context, PharmacyProvider provider) {
+    switch (provider.status) {
+      // ---------------------------------------------------------------
+      // STATE 1: Loading → Shimmer skeleton
+      // ---------------------------------------------------------------
+      case PharmacyStatus.loading:
+        return Column(
+          children: [
+            _dateBanner(provider.selectedDate),
+            const Expanded(child: ShimmerLoading()),
+          ],
+        );
+
+      // ---------------------------------------------------------------
+      // STATE 2: Error → Friendly error + Retry
+      // ---------------------------------------------------------------
+      case PharmacyStatus.error:
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.location_off_outlined, size: 72, color: AppColors.error.withOpacity(0.7)),
+                const SizedBox(height: 20),
+                const Text(
+                  'Oops!',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  provider.errorMessage,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.4),
+                ),
+                const SizedBox(height: 28),
+                FilledButton.icon(
+                  onPressed: () => provider.retry(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AllPharmaciesScreen()),
+                    );
+                  },
+                  child: const Text('View all pharmacies in province'),
+                ),
+              ],
+            ),
+          ),
+        );
+
+      // ---------------------------------------------------------------
+      // STATE 3: Empty (no duty pharmacies today in this wilaya)
+      // ---------------------------------------------------------------
+      case PharmacyStatus.empty:
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.medical_services_outlined,
+                  size: 72,
+                  color: AppColors.textSecondary.withOpacity(0.5),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'لا توجد صيدليات مناوبة',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'لا توجد صيدليات مناوبة اليوم في ولاية ${provider.selectedWilaya}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                FilledButton.icon(
+                  onPressed: () => provider.retry(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Try Again'),
+                ),
+              ],
+            ),
+          ),
+        );
+
+      // ---------------------------------------------------------------
+      // STATE 4: Fallback (no duty today) → auto-loaded all pharmacies
+      // ---------------------------------------------------------------
+      case PharmacyStatus.fallback:
+        return Column(
+          children: [
+            _fallbackBanner(provider.selectedDate),
+            Expanded(
+              child: _buildDataList(context, provider),
+            ),
+          ],
+        );
+
+      // ---------------------------------------------------------------
+      // STATE 4: Data → List (with optional far-away warning)
+      // ---------------------------------------------------------------
+      case PharmacyStatus.data:
+        return Column(
+          children: [
+            _dateBanner(provider.selectedDate),
+            if (provider.isFarAway) _farAwayBanner(provider.nearestDistanceKm),
+            Expanded(child: _buildDataList(context, provider)),
+          ],
+        );
+    }
+  }
+
+  // ── Banners ──────────────────────────────────────────────────────────
+  Widget _announcementBanner(Announcement a) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: AppColors.accent.withOpacity(0.10),
+      child: Row(
+        children: [
+          const Icon(Icons.campaign_outlined, size: 18, color: AppColors.accent),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (a.title.isNotEmpty)
+                  Text(
+                    a.title,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.accent),
+                  ),
+                Text(
+                  a.message,
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  Widget _dateBanner(DateTime date) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: AppColors.primary.withOpacity(0.06),
+      child: Text(
+        'Duty pharmacies — ${date.day}/${date.month}/${date.year}',
+        style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.primary),
+      ),
+    );
+  }
 
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: AppColors.error),
-              const SizedBox(height: 16),
-              Text(
-                _errorMessage!,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                onPressed: _loadPharmacies,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_pharmacies.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.local_pharmacy_outlined, size: 64, color: AppColors.textSecondary),
-            const SizedBox(height: 16),
-            const Text(
-              'No duty pharmacies found for this date.',
-              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        // Date banner
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: AppColors.primary.withOpacity(0.06),
-          child: Text(
-            'Duty pharmacies — ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
+  Widget _fallbackBanner(DateTime date) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: AppColors.warning.withOpacity(0.08),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, size: 18, color: AppColors.warning),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'No duty pharmacies for ${date.day}/${date.month}/${date.year}. Showing all nearby pharmacies.',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.warning),
             ),
           ),
-        ),
-        // Pharmacy list
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 80),
-            itemCount: _pharmacies.length,
-            itemBuilder: (context, index) {
-              return _PharmacyCard(
-                pharmacy: _pharmacies[index],
-                onWhatsApp: _openWhatsApp,
-                onMaps: _openMaps,
-              );
-            },
+        ],
+      ),
+    );
+  }
+
+  Widget _farAwayBanner(double nearestKm) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: AppColors.warning.withOpacity(0.10),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, size: 18, color: AppColors.warning),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'No nearby duty pharmacies. Nearest is ${nearestKm.toStringAsFixed(1)} km away.',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.warning),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+    );
+  }
+
+  // ── List ─────────────────────────────────────────────────────────────
+  Widget _buildDataList(BuildContext context, PharmacyProvider provider) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 80),
+      itemCount: provider.pharmacies.length,
+      itemBuilder: (context, index) {
+        final pharmacy = provider.pharmacies[index];
+        return _PharmacyCard(
+          pharmacy: pharmacy,
+          isOpen: provider.isPharmacyOpen(pharmacy.id),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => PharmacyDetailsScreen(pharmacy: pharmacy),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -270,109 +340,116 @@ class _HomeScreenState extends State<HomeScreen> {
 // ---------------------------------------------------------------------------
 class _PharmacyCard extends StatelessWidget {
   final DutyPharmacy pharmacy;
-  final void Function(String phone) onWhatsApp;
-  final void Function(double lat, double lng, String name) onMaps;
+  final bool isOpen;
+  final VoidCallback? onTap;
 
   const _PharmacyCard({
     required this.pharmacy,
-    required this.onWhatsApp,
-    required this.onMaps,
+    required this.isOpen,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Row 1 — name + night badge
-            Row(
-              children: [
-                const Icon(Icons.local_pharmacy, color: AppColors.accent, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    pharmacy.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.local_pharmacy, color: AppColors.accent, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      pharmacy.displayName,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                     ),
                   ),
-                ),
-                if (pharmacy.isNightDuty)
+                  if (pharmacy.isNightDuty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.warning.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text('Night', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.warning)),
+                    ),
+                  if (pharmacy.isNightDuty) const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: AppColors.warning.withOpacity(0.15),
+                      color: isOpen
+                          ? AppColors.accent.withOpacity(0.15)
+                          : AppColors.error.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
-                      'Night',
+                    child: Text(
+                      isOpen ? 'Open' : 'Closed',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.warning,
+                        color: isOpen ? AppColors.accent : AppColors.error,
                       ),
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 6),
-
-            // Row 2 — municipality
-            Row(
-              children: [
-                const Icon(Icons.location_city, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
-                Text(
-                  pharmacy.municipality,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            // Row 3 — distance
-            Row(
-              children: [
-                const Icon(Icons.straighten, size: 14, color: AppColors.textSecondary),
-                const SizedBox(width: 4),
-                Text(
-                  '${pharmacy.distanceKm.toStringAsFixed(1)} km away',
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Action buttons
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionButton(
-                    icon: Icons.chat,
-                    label: 'WhatsApp',
-                    color: AppColors.accent,
-                    onTap: pharmacy.whatsappNumber != null
-                        ? () => onWhatsApp(pharmacy.whatsappNumber!)
-                        : null,
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.location_city, size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 4),
+                  Text(pharmacy.municipality, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.straighten, size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 4),
+                  Text('${pharmacy.distanceKm.toStringAsFixed(1)} km away', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ActionButton(
+                      icon: Icons.phone,
+                      label: 'Call',
+                      color: AppColors.accent,
+                      onTap: pharmacy.phoneNumber != null
+                          ? () async {
+                              final ok = await LaunchUtils.launchSecureCall(pharmacy.phoneNumber!);
+                              if (!ok && context.mounted) LaunchUtils.showLaunchError(context, 'make call');
+                            }
+                          : null,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _ActionButton(
-                    icon: Icons.directions,
-                    label: 'Navigate',
-                    color: AppColors.primary,
-                    onTap: () => onMaps(pharmacy.latitude, pharmacy.longitude, pharmacy.name),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _ActionButton(
+                      icon: Icons.directions,
+                      label: 'Navigate',
+                      color: AppColors.primary,
+                      onTap: () async {
+                        final ok = await LaunchUtils.launchGoogleMaps(
+                          pharmacy.latitude,
+                          pharmacy.longitude,
+                        );
+                        if (!ok && context.mounted) LaunchUtils.showLaunchError(context, 'open navigation');
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -380,7 +457,7 @@ class _PharmacyCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Reusable action button inside a card
+// Reusable action button
 // ---------------------------------------------------------------------------
 class _ActionButton extends StatelessWidget {
   final IconData icon;
@@ -388,12 +465,7 @@ class _ActionButton extends StatelessWidget {
   final Color color;
   final VoidCallback? onTap;
 
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.onTap,
-  });
+  const _ActionButton({required this.icon, required this.label, required this.color, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -411,14 +483,7 @@ class _ActionButton extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: enabled ? color : Colors.grey),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? color : Colors.grey,
-                ),
-              ),
+              Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: enabled ? color : Colors.grey)),
             ],
           ),
         ),

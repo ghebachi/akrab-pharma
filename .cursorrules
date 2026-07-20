@@ -1,0 +1,18 @@
+# Project Context: Akrab Pharma
+- Architecture: Clean Architecture.
+- State Management: Provider.
+- Database: Supabase.
+- Project Location: Algeria (El Taref).
+
+# Structure Rules:
+- DO NOT rename existing files or classes.
+- Models: lib/models/ (e.g., duty_pharmacy.dart).
+- Services: lib/services/ (e.g., pharmacy_fetcher.dart, gps_service.dart).
+- Views: lib/views/ (e.g., home_screen.dart).
+- Widgets: lib/widgets/ (e.g., shimmer_loading.dart).
+
+# Coding Standards:
+- Always use null-safety.
+- Keep UI logic separated from data logic.
+- When implementing new features, reference the existing services (pharmacy_fetcher, gps_service).
+- Always use the existing '_PharmacyCard' widget inside home_screen.dart when displaying list items.

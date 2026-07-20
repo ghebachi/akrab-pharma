@@ -1,6 +1,10 @@
 import 'package:geolocator/geolocator.dart';
 
 class GpsService {
+  /// Minimum acceptable accuracy in meters.
+  /// If GPS reports worse accuracy, we ask the user to retry.
+  static const double minAccuracyMeters = 500.0;
+
   /// Requests permission and returns the current position.
   ///
   /// Throws [GpsException] on any failure so the caller can show a
@@ -26,12 +30,22 @@ class GpsService {
       );
     }
 
-    return Geolocator.getCurrentPosition(
+    final position = await Geolocator.getCurrentPosition(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
         timeLimit: Duration(seconds: 15),
       ),
     );
+
+    // Precision check: reject if accuracy is too low
+    if (position.accuracy > minAccuracyMeters) {
+      throw GpsException(
+        'GPS signal is weak (accuracy: ${position.accuracy.round()}m). '
+        'Please move to an open area and try again.',
+      );
+    }
+
+    return position;
   }
 }
 

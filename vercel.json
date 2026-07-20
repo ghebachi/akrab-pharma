@@ -1,7 +1,7 @@
 {
-  "buildCommand": "flutter build web --release --base-href=/ --dart-define=SUPABASE_URL=$SUPABASE_URL --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY",
   "outputDirectory": "build/web",
   "framework": null,
+  "buildCommand": "bash build.sh",
   "rewrites": [
     {
       "source": "/((?!assets/|favicon.png|icons/|manifest.json|splash/).*)",

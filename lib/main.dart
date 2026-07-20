@@ -17,11 +17,18 @@ import 'views/settings_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Load .env file
-  await dotenv.load();
+  // 1. Load .env file (graceful: skip if missing on Vercel)
+  try {
+    await dotenv.load();
+  } catch (_) {
+    if (kDebugMode) print('.env not found, falling back to --dart-define');
+  }
 
-  final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
-  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+  // Support both .env (local) and --dart-define (Vercel)
+  final supabaseUrl = dotenv.env['SUPABASE_URL']
+          ?? const String.fromEnvironment('SUPABASE_URL');
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY']
+          ?? const String.fromEnvironment('SUPABASE_ANON_KEY');
 
   if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
     runApp(const _ErrorApp(message: 'Missing SUPABASE_URL or SUPABASE_ANON_KEY in .env'));

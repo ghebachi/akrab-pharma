@@ -7618,66 +7618,76 @@ aa6:function aa6(a,b){this.a=a
 this.b=b},
 ah0:function ah0(){},
 anx:function anx(){},
-yE(){var s=0,r=A.A(t.H),q,p=2,o=[],n,m,l,k,j,i,h,g,f,e,d,c
-var $async$yE=A.B(function(a,b){if(a===1){o.push(b)
+yE(){var s=0,r=A.A(t.H),q,p=2,o=[],n,m,l,k,j,i,h,g,f,e,d,c,b
+var $async$yE=A.B(function(a,a0){if(a===1){o.push(a0)
 s=p}for(;;)switch(s){case 0:if($.Y==null)A.rR()
 $.Y.toString
-s=3
+p=4
+s=7
 return A.o($.aDe().hm(),$async$yE)
-case 3:j=$.aDe().ga_B().h(0,"SUPABASE_URL")
-n=j==null?"":j
-i=$.aDe().ga_B().h(0,"SUPABASE_ANON_KEY")
-m=i==null?"":i
+case 7:p=2
+s=6
+break
+case 4:p=3
+d=o.pop()
+s=6
+break
+case 3:s=2
+break
+case 6:i=$.aDe().ga_B().h(0,"SUPABASE_URL")
+n=i==null?"":i
+h=$.aDe().ga_B().h(0,"SUPABASE_ANON_KEY")
+m=h==null?"":h
 if(J.cl(n)===0||J.cl(m)===0){if($.Y==null)A.rR()
-h=$.Y
-A.aBT(h.EZ(B.a0M),h,"runApp")
+g=$.Y
+A.aBT(g.EZ(B.a0M),g,"runApp")
 s=1
 break}l=new A.rr($.ak())
-p=5
-s=8
-return A.o(l.Dk(),$async$yE)
-case 8:p=2
-s=7
-break
-case 5:p=4
-d=o.pop()
-s=7
-break
-case 4:s=2
-break
-case 7:p=10
-s=13
-return A.o(A.an8(m,B.IW,n),$async$yE)
-case 13:p=2
+p=9
 s=12
+return A.o(l.Dk(),$async$yE)
+case 12:p=2
+s=11
 break
-case 10:p=9
+case 9:p=8
 c=o.pop()
-k=A.Z(c)
+s=11
+break
+case 8:s=2
+break
+case 11:p=14
+s=17
+return A.o(A.an8(m,B.IW,n),$async$yE)
+case 17:p=2
+s=16
+break
+case 14:p=13
+b=o.pop()
+k=A.Z(b)
 f=A.j(k)
 if($.Y==null)A.rR()
-h=$.Y
-A.aBT(h.EZ(new A.xc("Failed to connect to Supabase:\n"+f,null)),h,"runApp")
+g=$.Y
+A.aBT(g.EZ(new A.xc("Failed to connect to Supabase:\n"+f,null)),g,"runApp")
 s=1
 break
-s=12
+s=16
 break
-case 9:s=2
+case 13:s=2
 break
-case 12:f=$.fE().b
+case 16:f=$.fE().b
 f===$&&A.a()
-s=14
+s=18
 return A.o(new A.a5d(f).BU(),$async$yE)
-case 14:e=b
+case 18:e=a0
 if(!e.a){f=e.b
 if($.Y==null)A.rR()
-h=$.Y
-A.aBT(h.EZ(new A.xc("Cannot reach Supabase.\n"+A.j(f),null)),h,"runApp")
+g=$.Y
+A.aBT(g.EZ(new A.xc("Cannot reach Supabase.\n"+A.j(f),null)),g,"runApp")
 s=1
 break}f=A.aVB(B.D9,A.b([new A.pn(new A.yj(l,null,A.aOq(),t.Y3),null,null,null,null,t.J8),new A.pn(new A.x1(new A.aCF(l),null,null,A.aOq(),A.b1g(),t.JJ),null,null,null,null,t.u6)],t.Ds))
 if($.Y==null)A.rR()
-h=$.Y
-A.aBT(h.EZ(f),h,"runApp")
+g=$.Y
+A.aBT(g.EZ(f),g,"runApp")
 case 1:return A.y(q,r)
 case 2:return A.x(o.at(-1),r)}})
 return A.z($async$yE,r)},

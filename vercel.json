@@ -2,8 +2,8 @@
   "outputDirectory": "build/web",
   "rewrites": [
     {
-      "source": "/(.*)",
-      "destination": "/build/web/index.html"
+      "source": "/((?!assets/|favicon.png|icons/|manifest.json|splash/).*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [

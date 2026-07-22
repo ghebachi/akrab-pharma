@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/app_colors.dart';
 import '../models/wilayas.dart';
 import '../services/gps_service.dart';
+import '../widgets/working_hours_picker.dart';
 
 class PharmacyRegistrationScreen extends StatefulWidget {
   const PharmacyRegistrationScreen({super.key});
@@ -28,6 +29,7 @@ class _PharmacyRegistrationScreenState
 
   bool _isLoading = false;
   bool _isLocating = false;
+  WorkingHours? _workingHours;
 
   // ── GPS capture ────────────────────────────────────────────────
 
@@ -77,6 +79,9 @@ class _PharmacyRegistrationScreenState
       if (lat != null && lng != null) {
         data['location'] = 'SRID=4326;POINT($lng $lat)';
       }
+
+      final wh = WorkingHoursPicker.toDb(_workingHours);
+      if (wh != null) data['working_hours'] = wh;
 
       await _supabase.from('pharmacies').insert(data);
 
@@ -251,6 +256,33 @@ class _PharmacyRegistrationScreenState
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 32),
+
+            // ── Working hours section ────────────────────────
+            const Divider(),
+            const SizedBox(height: 8),
+            Row(
+              children: const [
+                Icon(Icons.schedule, color: AppColors.primary, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Working Hours',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Set your opening and closing times for each day.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            WorkingHoursPicker(
+              onChanged: (h) => _workingHours = h,
             ),
             const SizedBox(height: 32),
 

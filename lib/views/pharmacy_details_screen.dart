@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/app_colors.dart';
 import '../models/duty_pharmacy.dart';
+import '../screens/patient_inquiry_screen.dart';
 import '../services/launch_utils.dart';
 import '../services/report_service.dart';
 
@@ -121,6 +122,29 @@ class PharmacyDetailsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
+              Expanded(
+                child: _ActionTile(
+                  icon: Icons.chat_bubble_outline,
+                  label: 'Ask a Question',
+                  color: AppColors.accent,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PatientInquiryScreen(
+                          pharmacyId: pharmacy.id,
+                          pharmacyName: pharmacy.displayName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
               Expanded(
                 child: _ActionTile(
                   icon: Icons.flag_outlined,

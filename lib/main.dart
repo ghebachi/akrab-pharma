@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -5,11 +7,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_colors.dart';
 import 'providers/pharmacy_provider.dart';
-import 'screens/login_screen.dart';
+import 'screens/auth_screen.dart';
 import 'services/auth_service.dart';
 import 'services/connection_service.dart';
 import 'services/settings_service.dart';
 import 'views/admin_dashboard_screen.dart';
+import 'views/admin_panel_screen.dart';
 import 'views/home_screen.dart';
 import 'views/settings_screen.dart';
 
@@ -130,97 +133,76 @@ class AkrabPharmaApp extends StatelessWidget {
   }
 }
 
-class AppShell extends StatelessWidget {
+class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final auth = AuthService();
+  State<AppShell> createState() => _AppShellState();
+}
 
-    return Scaffold(
-      drawer: Drawer(
-        child: SafeArea(
-          child: Column(
-            children: [
-              const DrawerHeader(
-                decoration: BoxDecoration(color: AppColors.primary),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Text(
-                    'Akrab Pharma',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.home_outlined),
-                title: const Text('Home'),
-                onTap: () => Navigator.of(context).pop(),
-              ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: const Text('Settings'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                  );
-                },
-              ),
-              const Divider(height: 1),
-              if (auth.isSignedIn) ...[
-                ListTile(
-                  leading: const Icon(Icons.admin_panel_settings_outlined),
-                  title: const Text('Admin Dashboard'),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const AdminDashboardScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Sign Out'),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    await auth.signOut();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Signed out')),
-                      );
-                    }
-                  },
-                ),
-              ] else
-                ListTile(
-                  leading: const Icon(Icons.login),
-                  title: const Text('Pharmacist Login'),
-                  onTap: () async {
-                    Navigator.of(context).pop();
-                    final result = await Navigator.of(context).push<bool>(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    );
-                    if (result == true && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Welcome back!')),
-                      );
-                    }
-                  },
-                ),
-            ],
-          ),
-        ),
-      ),
-      body: const HomeScreen(),
+class _AppShellState extends State<AppShell> {
+  final AuthService _auth = AuthService();
+  late final StreamSubscription<AuthState> _authSubscription;
+  bool? _isAdmin;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdminStatus();
+
+    // Listen to auth state changes (login/logout/token refresh)
+    _authSubscription = _auth.authStateChanges.listen((_) {
+      _checkAdminStatus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.cancel();
+    super.dispose();
+  }
+
+  Future<void> _checkAdminStatus() async {
+    if (!_auth.isSignedIn) {
+      if (mounted) setState(() => _isAdmin = false);
+      return;
+    }
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        if (mounted) setState(() => _isAdmin = false);
+        return;
+      }
+
+      final check = await Supabase.instance.client
+          .from('admin_users')
+          .select('user_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (mounted) setState(() => _isAdmin = check != null);
+    } catch (_) {
+      if (mounted) setState(() => _isAdmin = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HomeScreen(
+      scaffoldKey: _scaffoldKey,
+      isAdmin: _isAdmin,
+      isSignedIn: _auth.isSignedIn,
+      onSignOut: () async {
+        await _auth.signOut();
+        setState(() => _isAdmin = false);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Signed out')),
+          );
+        }
+      },
     );
   }
 }

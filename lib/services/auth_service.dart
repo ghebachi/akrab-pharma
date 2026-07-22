@@ -23,6 +23,23 @@ class AuthService {
 
   // ── Actions ────────────────────────────────────────────────────────
 
+  /// Sign up with email + password.
+  ///
+  /// Returns the [UserResponse] so the caller can check if the user
+  /// needs email confirmation.
+  Future<AuthResponse> signUp(String email, String password) async {
+    final response = await _supabase.auth.signUp(
+      email: email,
+      password: password,
+    );
+
+    if (kDebugMode) {
+      print('[Auth] Signed up: ${response.user?.email}');
+    }
+
+    return response;
+  }
+
   /// Sign in with email + password.
   ///
   /// Throws [AuthException] on invalid credentials, which the caller

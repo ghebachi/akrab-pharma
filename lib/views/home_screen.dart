@@ -5,32 +5,59 @@ import '../config/app_colors.dart';
 import '../models/duty_pharmacy.dart';
 import '../models/wilayas.dart';
 import '../providers/pharmacy_provider.dart';
+import '../screens/auth_screen.dart';
 import '../services/announcement_service.dart';
 import '../services/launch_utils.dart';
 import '../widgets/shimmer_loading.dart';
+import 'admin_dashboard_screen.dart';
+import 'admin_panel_screen.dart';
 import 'all_pharmacies_screen.dart';
 import 'pharmacy_details_screen.dart';
+import 'settings_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Home screen
 // ---------------------------------------------------------------------------
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final GlobalKey<ScaffoldState>? scaffoldKey;
+  final bool? isAdmin;
+  final bool isSignedIn;
+  final VoidCallback? onSignOut;
+
+  const HomeScreen({
+    super.key,
+    this.scaffoldKey,
+    this.isAdmin,
+    this.isSignedIn = false,
+    this.onSignOut,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const _HomeView();
+    return _HomeView(
+      scaffoldKey: scaffoldKey,
+      isAdmin: isAdmin,
+      isSignedIn: isSignedIn,
+      onSignOut: onSignOut,
+    );
   }
 }
 
 class _HomeView extends StatelessWidget {
-  const _HomeView();
+  final GlobalKey<ScaffoldState>? scaffoldKey;
+  final bool? isAdmin;
+  final bool isSignedIn;
+  final VoidCallback? onSignOut;
+
+  const _HomeView({this.scaffoldKey, this.isAdmin, this.isSignedIn = false, this.onSignOut});
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<PharmacyProvider>();
 
     return Scaffold(
+      key: scaffoldKey,
+      drawer: _buildDrawer(context),
       appBar: AppBar(
         leading: Builder(
           builder: (ctx) => IconButton(
@@ -68,6 +95,7 @@ class _HomeView extends StatelessWidget {
       floatingActionButton: provider.status == PharmacyStatus.loading
           ? null
           : FloatingActionButton.extended(
+              heroTag: null,
               onPressed: () => provider.load(),
               icon: const Icon(Icons.my_location),
               label: const Text('Refresh'),
@@ -87,6 +115,98 @@ class _HomeView extends StatelessWidget {
     if (picked != null && picked != provider.selectedDate) {
       provider.setDate(picked);
     }
+  }
+
+  // ── Drawer ─────────────────────────────────────────────────────
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: AppColors.primary),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  'Akrab Pharma',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home_outlined),
+              title: const Text('Home'),
+              onTap: () => Navigator.of(context).pop(),
+            ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('Settings'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
+            ),
+            const Divider(height: 1),
+            if (isSignedIn) ...[
+              if (isAdmin == true) ...[
+                ListTile(
+                  leading: const Icon(Icons.dashboard_outlined),
+                  title: const Text('Admin Panel'),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+              ],
+              ListTile(
+                leading: const Icon(Icons.local_pharmacy_outlined),
+                title: const Text('Pharmacist Dashboard'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+            ],
+            const Spacer(),
+            const Divider(height: 1),
+            if (isSignedIn)
+              ListTile(
+                leading: const Icon(Icons.logout),
+                title: const Text('Sign Out'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onSignOut!();
+                },
+              )
+            else
+              ListTile(
+                leading: const Icon(Icons.login),
+                title: const Text('Sign In'),
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(builder: (_) => const AuthScreen()),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ── Body builder ─────────────────────────────────────────────────────

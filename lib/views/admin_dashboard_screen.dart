@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/app_colors.dart';
+import '../screens/pharmacy_registration_screen.dart';
 import '../services/auth_service.dart';
 
 /// Pharmacist dashboard — duty toggle + view reports.
@@ -170,13 +171,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // ── Error state ──────────────────────────────────────────────────
 
   Widget _buildError() {
+    final noPharmacy = _error == 'No pharmacy linked to your account.';
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+            Icon(
+              noPharmacy ? Icons.local_pharmacy_outlined : Icons.error_outline,
+              size: 48,
+              color: noPharmacy ? AppColors.primary : AppColors.error,
+            ),
             const SizedBox(height: 12),
             Text(
               _error!,
@@ -184,10 +191,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
-            FilledButton.tonal(
-              onPressed: _loadDashboard,
-              child: const Text('Retry'),
-            ),
+            if (noPharmacy)
+              FilledButton.icon(
+                onPressed: () async {
+                  final result = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const PharmacyRegistrationScreen(),
+                    ),
+                  );
+                  if (result == true && mounted) _loadDashboard();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Register Pharmacy'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+              )
+            else
+              FilledButton.tonal(
+                onPressed: _loadDashboard,
+                child: const Text('Retry'),
+              ),
           ],
         ),
       ),

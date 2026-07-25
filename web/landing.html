@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akrab Pharma - صيدليات المناوبة</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --navy: #1E3B8B;
+            --green: #10B981;
+            --bg-color: #F9FAFB;
+            --text-dark: #1F2937;
+            --text-muted: #6B7280;
+            --radius-xl: 24px;
+            --radius-lg: 16px;
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* --- Browser Frame --- */
+        .browser-frame {
+            max-width: 1200px;
+            margin: 40px auto;
+            background: #FFFFFF;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            border: 1px solid #E5E7EB;
+            display: flex;
+            flex-direction: column;
+            min-height: 80vh;
+        }
+
+        .browser-header {
+            background: #1F2937;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #374151;
+        }
+
+        .browser-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot-red { background: #EF4444; }
+        .dot-yellow { background: #FBBF22; }
+        .dot-green { background: #22C55E; }
+
+        .browser-url-bar {
+            background: #374151;
+            color: #D1D5DB;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            margin-right: 16px;
+            flex-grow: 1;
+            max-width: 400px;
+            text-align: center;
+            font-family: monospace;
+        }
+
+        .browser-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background-color: #F9FAFB;
+        }
+
+        /* --- Geometric Background --- */
+        .bg-pattern {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(#E5E7EB 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.5;
+            z-index: 0;
+        }
+
+        /* --- Navbar --- */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: #FFFFFF;
+            position: relative;
+            z-index: 10;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 900;
+            font-size: 24px;
+            color: var(--navy);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background-color: var(--navy);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 700;
+            font-size: 16px;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover { color: var(--green); }
+
+        .btn-pharmacist {
+            background-color: var(--navy);
+            color: white;
+            padding: 10px 24px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        
+        .btn-pharmacist:hover { background-color: #162c68; }
+
+        /* --- Hero Section --- */
+        .hero-section {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 5;
+            padding: 60px 40px;
+            gap: 40px;
+        }
+
+        .hero-text-content {
+            max-width: 600px;
+        }
+
+        /* Pulse Animation */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .date-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #D1FAE5;
+            color: var(--green);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        .hero-title {
+            font-size: 56px;
+            font-weight: 900;
+            color: var(--navy);
+            line-height: 1.1;
+            margin-bottom: 20px;
+        }
+
+        .hero-title span { color: var(--green); }
+
+        .hero-description {
+            font-size: 20px;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+            line-height: 1.6;
+            max-width: 500px;
+        }
+
+        /* CTA Glow */
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
+        }
+
+        .cta-group { display: flex; gap: 16px; flex-wrap: wrap;}
+
+        .btn-search-main {
+            background-color: var(--green);
+            color: white;
+            padding: 18px 36px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 900;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.2s;
+            animation: glow 1.5s infinite alternate;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-search-main:hover { transform: translateY(-2px); }
+
+        .search-bar-inline {
+            display: flex;
+            align-items: center;
+            background: white;
+            border-radius: 50px;
+            padding: 8px 8px 8px 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid #E5E7EB;
+            flex-grow: 1;
+            max-width: 400px;
+        }
+
+        .search-bar-inline input {
+            border: none;
+            outline: none;
+            flex-grow: 1;
+            font-size: 16px;
+            padding: 8px;
+        }
+
+        .btn-search-sm {
+            background-color: var(--navy);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 24px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* --- Phone Mockup --- */
+        .phone-mockup-container {
+            position: relative;
+            width: 280px;
+            height: 570px;
+            background: #1F2937;
+            border-radius: 40px;
+            box-shadow: var(--shadow-xl);
+            padding: 15px;
+            border: 6px solid #374151;
+            flex-shrink: 0;
+            margin-top: -50px;
+        }
+
+        .phone-screen {
+            width: 100%;
+            height: 100%;
+            background: #F9FAFB;
+            border-radius: 25px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .mockup-map-header {
+            background-color: var(--navy);
+            color: white;
+            padding: 10px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .mockup-map-body {
+            height: 70%;
+            background-color: #E5E7EB;
+            position: relative;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%23d1d5db" width="100" height="100"/><path fill="%23e5e7eb" d="M0 10h100v10H0zM0 30h100v10H0zM0 50h100v10H0zM0 70h100v10H0zM0 90h100v10H0zM10 0v100h10V0H10zM30 0v100h10V0H30zM50 0v100h10V0H50zM70 0v100h10V0H70zM90 0v100h10V0H90z"/></svg>');
+        }
+
+        .map-pin {
+            position: absolute;
+            width: 20px; height: 20px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 2px solid white;
+        }
+        .pin-green { background: var(--green); }
+        .pin-blue { background: var(--navy); }
+        .pin-red { background: #EF4444; }
+
+        .mockup-pharmacy-card {
+            position: absolute;
+            bottom: 10px;
+            left: 10px; right: 10px;
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            border: 1px solid #E5E7EB;
+        }
+
+        .card-title { font-size: 12px; font-weight: 900; color: var(--navy); margin-bottom: 4px;}
+        .card-status { display: flex; gap: 4px; font-size: 8px;}
+        .status-night { color: #FBB22E; font-weight: bold;}
+        .status-open { color: var(--green); font-weight: bold;}
+
+        /* Floating Icons Animation */
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+
+        .floating-icon {
+            position: absolute;
+            font-size: 24px;
+            opacity: 0.6;
+            animation: float 4s infinite ease-in-out;
+        }
+        .icon-1 { top: 10%; right: 10%; animation-delay: 0s; color: var(--navy);}
+        .icon-2 { bottom: 20%; left: 5%; animation-delay: 1s; color: var(--green);}
+        .icon-3 { top: 40%; left: 15%; animation-delay: 2s; color: #FBB22E;}
+        .icon-4 { bottom: 15%; right: 18%; animation-delay: 1.5s; color: #EF4444;}
+
+
+        /* --- Footer --- */
+        .browser-footer {
+            background: #FFFFFF;
+            padding: 16px 40px;
+            border-top: 1px solid #E5E7EB;
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+        }
+
+        .footer-chip {
+            background: var(--bg-color);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 992px) {
+            .hero-section { flex-direction: column; text-align: center; padding: 40px 20px;}
+            .hero-text-content { max-width: 100%; }
+            .cta-group { justify-content: center; }
+            .search-bar-inline { max-width: 100%; margin: 0 auto; }
+            .phone-mockup-container { margin-top: 20px; }
+            .navbar { flex-direction: column; gap: 16px; }
+            .nav-links { gap: 16px; flex-wrap: wrap; justify-content: center; }
+            .hero-title { font-size: 36px; }
+            .hero-description { font-size: 16px; }
+            .browser-footer { justify-content: center; flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="browser-frame">
+    <!-- Browser Header -->
+    <div class="browser-header">
+        <div class="browser-dots">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+        </div>
+        <div class="browser-url-bar">akrab-pharma.vercel.app</div>
+    </div>
+
+    <!-- Browser Content -->
+    <div class="browser-content">
+        <div class="bg-pattern"></div>
+
+        <!-- Navbar -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <div class="logo-icon">🦂</div>
+                Akrab Pharma
+            </div>
+            <ul class="nav-links">
+                <li><a href="#">الرئيسية</a></li>
+                <li><a href="#">الصيدليات</a></li>
+                <li><a href="#">عن المشروع</a></li>
+                <li><a href="#" class="btn-pharmacist">دخول الصيادلة</a></li>
+            </ul>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-text-content">
+                <div class="date-badge">
+                    📍 صيدليات المناوبة — 22/07/2026
+                </div>
+                <h1 class="hero-title">
+                    صيدليات المناوبة في<br>ولاية قالمة بين<br>يديك <span>✦</span>
+                </h1>
+                <p class="hero-description">
+                    ابحث عن أقرب صيدلية مفتوحة أو مناوبة ليلية في منطقتك بسرعة وسهولة. كن مستعداً لحالات الطوارئ.
+                </p>
+                <div class="cta-group">
+                    <button class="btn-search-main">
+                        🔍 ابحث عن صيدلية الآن
+                    </button>
+                    <div class="search-bar-inline">
+                        <input type="text" placeholder="ابحث عن مدينة أو بلدية...">
+                        <button class="btn-search-sm">بحث</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phone Mockup -->
+            <div class="phone-mockup-container">
+                <div class="phone-screen">
+                    <div class="mockup-map-header">
+                        <span>📍 Akrab Pharma</span>
+                        <span>9:41</span>
+                    </div>
+                    <div class="mockup-map-body">
+                        <div class="map-pin pin-green" style="top: 20%; left: 30%;"></div>
+                        <div class="map-pin pin-blue" style="top: 50%; left: 55%;"></div>
+                        <div class="map-pin pin-green" style="top: 35%; left: 70%;"></div>
+                        <div class="map-pin pin-red" style="top: 65%; left: 25%;"></div>
+                        <div class="map-pin pin-blue" style="top: 45%; left: 40%;"></div>
+                    </div>
+                    <div class="mockup-pharmacy-card">
+                        <div class="card-title">صيدلية الحياة</div>
+                        <div class="card-status">
+                            <span class="status-night">🌙 مناوبة ليلية</span>
+                            <span class="status-open">● مفتوحة</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Floating Icons -->
+                <div class="floating-icon icon-1">📍</div>
+                <div class="floating-icon icon-2">🕐</div>
+                <div class="floating-icon icon-3">🏥</div>
+                <div class="floating-icon icon-4">⭐</div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <div class="browser-footer">
+        <div class="footer-chip">📍 صيدليات المناوبة — 22/07/2026</div>
+        <div class="footer-chip">🕐 تلقائي (GPS)</div>
+    </div>
+</div>
+
+</body>
+</html>

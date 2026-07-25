@@ -1,3 +1,11 @@
 {
-  "outputDirectory": "build/web"
+  "buildCommand": "flutter build web --release",
+  "outputDirectory": "build/web",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }

@@ -1,11 +1,5 @@
 {
-  "buildCommand": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 _flutter && export PATH=\"$PATH:`pwd`/_flutter/bin\" && flutter precache --web && flutter pub get && flutter build web --release --dart-define=SUPABASE_URL=https://wjallkqkqwouseufszpcw.supabase.co --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqYWxsa3FrcXdvc2V1ZnN6cGN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMDE1NzQsImV4cCI6MjA5OTc3NzU3NH0.epKAtr_tXlUrte_DCIVxt_C8gFmtFXi6QKhRpzCaS-U",
+  "buildCommand": "sh build.sh",
   "outputDirectory": "build/web",
-  "framework": null,
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+  "framework": null
 }

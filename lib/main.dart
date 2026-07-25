@@ -13,6 +13,7 @@ import 'services/connection_service.dart';
 import 'services/settings_service.dart';
 import 'views/admin_dashboard_screen.dart';
 import 'views/admin_panel_screen.dart';
+import 'screens/landing_screen.dart';
 import 'views/home_screen.dart';
 import 'views/settings_screen.dart';
 
@@ -190,19 +191,6 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    return HomeScreen(
-      scaffoldKey: _scaffoldKey,
-      isAdmin: _isAdmin,
-      isSignedIn: _auth.isSignedIn,
-      onSignOut: () async {
-        await _auth.signOut();
-        setState(() => _isAdmin = false);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Signed out')),
-          );
-        }
-      },
-    );
+    return const LandingScreen();
   }
 }

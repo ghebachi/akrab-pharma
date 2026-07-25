@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 
 class GpsService {
@@ -10,8 +11,12 @@ class GpsService {
   /// Throws [GpsException] on any failure so the caller can show a
   /// user-friendly message.
   static Future<Position> getCurrentPosition() async {
+    if (kIsWeb) {
+      return _getCurrentPositionWeb();
+    }
+
     if (!await Geolocator.isLocationServiceEnabled()) {
-      throw GpsException('Location services are disabled.');
+      throw const GpsException('Location services are disabled.');
     }
 
     var permission = await Geolocator.checkPermission();
@@ -19,12 +24,12 @@ class GpsService {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        throw GpsException('Location permission denied.');
+        throw const GpsException('Location permission denied.');
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw GpsException(
+      throw const GpsException(
         'Location permission permanently denied. '
         'Please enable it from app settings.',
       );
@@ -46,6 +51,31 @@ class GpsService {
     }
 
     return position;
+  }
+
+  /// On web, Geolocator uses the browser Geolocation API.
+  /// Accuracy checks and permissions are handled differently.
+  static Future<Position> _getCurrentPositionWeb() async {
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 15),
+        ),
+      );
+
+      if (position.accuracy > minAccuracyMeters) {
+        throw GpsException(
+          'GPS signal is weak (accuracy: ${position.accuracy.round()}m). '
+          'Please move to an open area and try again.',
+        );
+      }
+
+      return position;
+    } catch (e) {
+      if (e is GpsException) rethrow;
+      throw GpsException('Failed to get location: $e');
+    }
   }
 }
 

@@ -7,15 +7,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_colors.dart';
 import 'providers/pharmacy_provider.dart';
-import 'screens/auth_screen.dart';
 import 'services/auth_service.dart';
 import 'services/connection_service.dart';
 import 'services/settings_service.dart';
-import 'views/admin_dashboard_screen.dart';
-import 'views/admin_panel_screen.dart';
-import 'screens/landing_screen.dart';
 import 'views/home_screen.dart';
-import 'views/settings_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -189,8 +184,17 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
+  void _signOut() async {
+    await _auth.signOut();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const LandingScreen();
+    return HomeScreen(
+      scaffoldKey: _scaffoldKey,
+      isAdmin: _isAdmin,
+      isSignedIn: _auth.isSignedIn,
+      onSignOut: _signOut,
+    );
   }
 }

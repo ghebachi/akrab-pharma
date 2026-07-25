@@ -95,3 +95,5 @@ coverage/
 
 # Pubspec lock (remove for apps, keep for packages)
 # pubspec.lock
+.vercel
+.env*
